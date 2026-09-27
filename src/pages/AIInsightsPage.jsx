@@ -6,7 +6,6 @@ import {
   TrendingUp, X, Clock
 } from 'lucide-react';
 import { AIDisclaimer, ConfidenceBadge, SectionHeader } from '../components/common/UIElements';
-import { aiInsights } from '../data/mockData';
 import { getAIInsights } from '../services/api';
 
 const suggestedQueries = [
@@ -20,7 +19,7 @@ const suggestedQueries = [
 
 export default function AIInsightsPage() {
   const [query, setQuery] = useState('');
-  const [history, setHistory] = useState([aiInsights[0]]);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const handleQuery = async (q = query) => {

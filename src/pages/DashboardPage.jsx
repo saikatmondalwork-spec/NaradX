@@ -14,7 +14,6 @@ import StatCard from '../components/common/StatCard';
 import MapView from '../components/map/MapView';
 import { SectionHeader, StatusBadge, PriorityBar, AIDisclaimer } from '../components/common/UIElements';
 import { getDashboardStats, getHotspots, getChartData } from '../services/api';
-import { hotspots, chartData } from '../data/mockData';
 import { useAppStore } from '../store/appStore';
 
 const stagger = { animate: { transition: { staggerChildren: 0.07 } } };
@@ -22,8 +21,35 @@ const fadeUp = { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 } }
 
 export default function DashboardPage() {
   const [selectedHotspot, setSelectedHotspot] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hotspotsData, setHotspotsData] = useState([]);
+  const [chartDataState, setChartDataState] = useState({ reportsByCategory: [], demandTrend: [], investmentVsDemand: [], infrastructureGap: [] });
   const liveStats = useAppStore(s => s.dashboardStats);
+  const setDashboardStats = useAppStore(s => s.setDashboardStats);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const [statsRes, hotspotsRes, chartRes] = await Promise.all([
+          getDashboardStats(),
+          getHotspots(),
+          getChartData(),
+        ]);
+        if (statsRes.success && statsRes.data) {
+          // Update Zustand store so KPI cards reflect real numbers
+          if (setDashboardStats) setDashboardStats(statsRes.data);
+        }
+        if (hotspotsRes.success) setHotspotsData(hotspotsRes.data || []);
+        if (chartRes.success) setChartDataState(chartRes.data || {});
+      } catch (err) {
+        console.error('Dashboard load error:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stats = [
     {
@@ -60,7 +86,7 @@ export default function DashboardPage() {
     },
   ];
 
-  const topHotspots = hotspots.slice(0, 5);
+  const topHotspots = hotspotsData.slice(0, 5);
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-full">
@@ -115,7 +141,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <MapView
-              hotspots={hotspots}
+              hotspots={hotspotsData}
               selectedId={selectedHotspot?.id}
               onHotspotClick={setSelectedHotspot}
               height="380px"
@@ -162,7 +188,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 card p-4">
           <SectionHeader title="Demand Trend" description="Reports submitted vs resolved over time" />
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={chartData.demandTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={chartDataState.demandTrend} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="reportsGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#1A56DB" stopOpacity={0.15} />
@@ -191,7 +217,7 @@ export default function DashboardPage() {
           <ResponsiveContainer width="100%" height={140}>
             <PieChart>
               <Pie
-                data={chartData.reportsByCategory}
+                data={chartDataState.reportsByCategory}
                 cx="50%"
                 cy="50%"
                 outerRadius={60}
@@ -199,7 +225,7 @@ export default function DashboardPage() {
                 dataKey="value"
                 paddingAngle={2}
               >
-                {chartData.reportsByCategory.map((entry, i) => (
+                {(chartDataState.reportsByCategory || []).map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
@@ -207,7 +233,7 @@ export default function DashboardPage() {
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-1.5 mt-2">
-            {chartData.reportsByCategory.slice(0, 4).map(cat => (
+            {(chartDataState.reportsByCategory || []).slice(0, 4).map(cat => (
               <div key={cat.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
@@ -225,7 +251,7 @@ export default function DashboardPage() {
         <div className="card p-4">
           <SectionHeader title="Investment vs. Demand" description="Gap analysis by area" />
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData.investmentVsDemand} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={chartDataState.investmentVsDemand} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
               <XAxis dataKey="area" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} />
@@ -240,7 +266,7 @@ export default function DashboardPage() {
         <div className="card p-4">
           <SectionHeader title="Infrastructure Gap Index" description="Current coverage vs requirement" />
           <div className="space-y-3 mt-2">
-            {chartData.infrastructureGap.map(item => (
+            {(chartDataState.infrastructureGap || []).map(item => (
               <div key={item.category}>
                 <div className="flex justify-between mb-1">
                   <span className="text-sm font-medium text-civic-body">{item.category}</span>

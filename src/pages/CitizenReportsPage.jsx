@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, Filter, Eye, ChevronDown, ChevronRight, Download,
@@ -9,9 +9,19 @@ import { StatusBadge, SectionHeader, CategoryDot, EmptyState } from '../componen
 import { categories, priorities, statuses, languages } from '../data/mockData';
 import { useAppStore } from '../store/appStore';
 import { useToast } from '../components/common/Toast';
+import { getCitizenReports } from '../services/api';
 
 export default function CitizenReportsPage() {
   const citizenReports = useAppStore(s => s.citizenReports);
+  const setCitizenReports = useAppStore(s => s.setCitizenReports);
+  
+  useEffect(() => {
+    getCitizenReports().then(res => {
+      if (res.success) {
+        setCitizenReports(res.data || []);
+      }
+    });
+  }, [setCitizenReports]);
   const toast = useToast();
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');

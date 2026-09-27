@@ -43,6 +43,14 @@ export const useAppStore = create((set, get) => ({
     searchQuery: '',
   }),
 
+  // ─── Replace dashboard stats with real data from Supabase ───────────────────
+  setDashboardStats: (newStats) => set((state) => ({
+    dashboardStats: { ...state.dashboardStats, ...newStats },
+  })),
+
+  // ─── Set citizen reports from DB ──────────────────────────────────────────────
+  setCitizenReports: (reports) => set({ citizenReports: reports }),
+
   // ─── Add a new citizen report (called after successful submission) ───────────
   addCitizenReport: (report) => set((state) => {
     const newReport = {

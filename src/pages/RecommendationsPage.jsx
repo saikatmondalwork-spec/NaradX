@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -7,13 +7,21 @@ import {
   CheckCircle, Eye, GitCompare
 } from 'lucide-react';
 import { StatusBadge, PriorityBar, SectionHeader, AIDisclaimer, CategoryDot } from '../components/common/UIElements';
-import { recommendations, categories } from '../data/mockData';
+import { categories } from '../data/mockData';
+import { getRecommendations } from '../services/api';
 
 export default function RecommendationsPage() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterUrgency, setFilterUrgency] = useState('');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+
+  useEffect(() => {
+    getRecommendations().then(res => {
+      if (res.success) setRecommendations(res.data || []);
+    });
+  }, []);
 
   const filtered = recommendations.filter(r => {
     if (filterCategory && r.category !== filterCategory) return false;

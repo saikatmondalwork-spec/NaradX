@@ -242,6 +242,7 @@ export default function ReportIssuePage() {
         ...formData,
         coordinates: geoCoords,
         evidenceCount: uploadedFiles.length,
+        files: uploadedFiles.map(f => f.file), // actual File objects for Supabase Storage upload
         attachments: uploadedFiles.map(f => f.name),
       };
       const result = await submitReport(payload);
@@ -256,7 +257,7 @@ export default function ReportIssuePage() {
         language: formData.language,
         coordinates: geoCoords,
         evidenceCount: uploadedFiles.length,
-        attachments: uploadedFiles.map(f => f.name),
+        attachments: result.data?.attachments || uploadedFiles.map(f => f.name),
         district: formData.district,
       });
 
